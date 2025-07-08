@@ -2,10 +2,9 @@
 #include <vector>
 using namespace std;
 
-/* Macros */
+/* Constants */
 #define TOTAL_FRAMES 10
-#define STRIKE_SCORE 10
-#define SPARE_SCORE 10
+#define TOTAL_PINS 10
 
 class BowlingGame {
 public:
@@ -21,13 +20,11 @@ public:
 
         for (int frame = 1; frame <= TOTAL_FRAMES; ++frame) {
             if (isStrike(index)) {
-                // Strike: 10 + next two rolls as bonus
-                totalScore += STRIKE_SCORE + strikeBonus(index);
-                index += 1; // Strike consumes 1 roll
+                totalScore += TOTAL_PINS + strikeBonus(index);
+                index += 1;
             } else if (isSpare(index)) {
-                // Spare: 10 + next roll as bonus
-                totalScore += SPARE_SCORE + spareBonus(index);
-                index += 2; // Spare consumes 2 rolls
+                totalScore += TOTAL_PINS + spareBonus(index);
+                index += 2;
             } else {
                 // Open frame: just sum the two rolls
                 totalScore += rolls[index] + rolls[index + 1];
@@ -43,29 +40,76 @@ private:
 
     // Check if the current roll is a strike
     bool isStrike(int idx) {
-        return rolls[idx] == STRIKE_SCORE;
+        return (idx < rolls.size()) && (rolls[idx] == TOTAL_PINS);
     }
 
     // Check if the two rolls make a spare
     bool isSpare(int idx) {
-        return (rolls[idx] + rolls[idx + 1]) == SPARE_SCORE;
+        return (idx + 1 < rolls.size()) && ((rolls[idx] + rolls[idx + 1]) == TOTAL_PINS);
     }
 
     // Get bonus for a strike (next two rolls)
     int strikeBonus(int idx) {
-        return rolls[idx + 1] + rolls[idx + 2];
+        if (idx + 2 < rolls.size()) {
+            return rolls[idx + 1] + rolls[idx + 2];
+        }
+        return 0;
     }
 
     // Get bonus for a spare (next one roll)
     int spareBonus(int idx) {
-        return rolls[idx + 2];
+        if (idx + 2 < rolls.size()) {
+            return rolls[idx + 2];
+        }
+        return 0;
     }
 };
 
+int readValidRoll(int maxPins) {
+    int pins;
+    while (true) {
+        cin >> pins;
+        if (pins < 0 || pins > maxPins) {
+            cout << "Invalid input. Enter a number between 0 and " << maxPins << ": ";
+        } else {
+            return pins;
+        }
+    }
+}
+
 int main() {
-    // Test game rolls: each number represents pins knocked down in a roll
-    vector<int> gameRolls = {4, 1, 5, 4, 6, 4, 10, 9, 1, 
-                             10, 10, 7, 2, 10, 2, 6};
+    vector<int> gameRolls;
+
+    for (int frame = 1; frame <= TOTAL_FRAMES; ++frame) {
+        cout << "Frame " << frame << endl;
+        int firstRoll = readValidRoll(TOTAL_PINS);
+        gameRolls.push_back(firstRoll);
+
+        int secondRoll = 0;
+        bool isStrike = (firstRoll == TOTAL_PINS);
+
+        if (frame < 10) {
+            if (!isStrike) {
+                secondRoll = readValidRoll(TOTAL_PINS - firstRoll);
+                gameRolls.push_back(secondRoll);
+            }
+        } else {
+            // 10th frame logic
+            if (isStrike) {
+                secondRoll = readValidRoll(TOTAL_PINS);
+                gameRolls.push_back(secondRoll);
+                int thirdRoll = readValidRoll(TOTAL_PINS);
+                gameRolls.push_back(thirdRoll);
+            } else {
+                secondRoll = readValidRoll(TOTAL_PINS - firstRoll);
+                gameRolls.push_back(secondRoll);
+                if (firstRoll + secondRoll == TOTAL_PINS) {
+                    int thirdRoll = readValidRoll(TOTAL_PINS);
+                    gameRolls.push_back(thirdRoll);
+                }
+            }
+        }
+    }
 
     BowlingGame game(gameRolls);
     int finalScore = game.getTotalScore();
